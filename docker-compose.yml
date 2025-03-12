@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  caddy:
+    image: caddy:latest
+    container_name: caddy_proxy
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Wewnętrzny dostęp przez http://localhost:8080
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - internal_net
+
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal_net
+
+  app:
+    build: ./app
+    container_name: fastapi_app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://user:password@db/app_db
+    volumes:
+      - ./app:/app  # Montowanie lokalnego kodu jako wolumen
+    depends_on:
+      - db
+    networks:
+      - internal_net
+
+networks:
+  internal_net:
+    driver: bridge
+
+volumes:
+  pgdata:

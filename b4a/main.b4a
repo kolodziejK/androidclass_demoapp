@@ -1,0 +1,140 @@
+#Region  Project Attributes 
+    #ApplicationLabel: B4A Example
+    #VersionCode: 1
+    #VersionName: 
+    #SupportedOrientations: unspecified
+    #CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+    #FullScreen: False
+    #IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	Private xHttp As HttpJob
+	Private rp As RuntimePermissions
+End Sub
+
+Sub Globals
+	Private sv As ScrollView
+	Private btnUpdate As Button
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	Activity.Color = Colors.White ' Ustawienie białego tła dla aplikacji
+
+	' Przycisk aktualizacji
+	btnUpdate.Initialize("btnUpdate")
+	btnUpdate.Text = "🔄 Aktualizuj"
+	btnUpdate.TextColor = Colors.White ' Biały tekst
+	btnUpdate.Color = Colors.ARGB(0, 0, 150, 1) ' Zielony Material Design
+	btnUpdate.Typeface = Typeface.DEFAULT_BOLD
+	Activity.AddView(btnUpdate, 10dip, 10dip, 150dip, 50dip)
+
+	' ScrollView do wyświetlania danych (bez tła)
+	sv.Initialize(100%y)
+	sv.Color = Colors.Transparent
+	Activity.AddView(sv, 0, 70dip, 100%x, 100%y - 70dip) ' Przesunięcie poniżej przycisku
+	If Not(rp.Check("android.permission.CALL_PHONE")) Then
+		rp.CheckAndRequest("android.permission.CALL_PHONE")
+	End If
+	' Pobieranie danych automatycznie
+	FetchData
+	
+End Sub
+
+Sub btnUpdate_Click
+	FetchData
+End Sub
+
+Sub FetchData
+	xHttp.Initialize("Job1", Me)
+	xHttp.Download("https://api.android.mzelent.pl/persons/")
+End Sub
+
+Sub JobDone(Job As HttpJob)
+	If Job.Success Then
+		ParseJSON(Job.GetString)
+	Else
+		ToastMessageShow("Błąd: " & Job.ErrorMessage, False)
+	End If
+	Job.Release
+End Sub
+
+Sub ParseJSON(jsonString As String)
+	Dim parser As JSONParser
+	parser.Initialize(jsonString)
+
+	Try
+		Dim root As List = parser.NextArray
+		sv.Panel.RemoveAllViews
+		sv.Panel.Height = root.Size * 130dip
+
+		For i = 0 To root.Size - 1
+			Dim item As Map = root.Get(i)
+
+			' Tworzenie panelu wizytówki
+			Dim card As Panel
+			card.Initialize("") ' Usuwamy "card", jeśli nie używamy kliknięcia na panel
+			card.Tag = item.Get("numer_telefonu") ' Zachowujemy dla zgodności, ale niekonieczne
+			card.Color = Colors.White
+			sv.Panel.AddView(card, 5%x, i * 130dip, 90%x, 120dip)
+
+			' Dane wizytówki
+			Dim lblName As Label
+			lblName.Initialize("")
+			lblName.Text = item.Get("tytul") & " " & item.Get("imie") & " " & item.Get("nazwisko")
+			lblName.TextSize = 18
+			lblName.TextColor = Colors.Black
+			lblName.Typeface = Typeface.DEFAULT_BOLD
+			card.AddView(lblName, 10dip, 10dip, 80%x, 30dip)
+
+			Dim lblDetails As Label
+			lblDetails.Initialize("")
+			lblDetails.Text = "Pokój: " & item.Get("pokoj") & " | Zakład: " & item.Get("zaklad")
+			lblDetails.TextSize = 14
+			lblDetails.TextColor = Colors.Gray
+			card.AddView(lblDetails, 10dip, 45dip, 80%x, 20dip)
+
+			Dim lblPhone As Label
+			lblPhone.Initialize("phoneLabel") ' Inicjalizacja z nazwą zdarzenia
+			lblPhone.Text = "📞 " & item.Get("numer_telefonu")
+			lblPhone.TextSize = 14
+			lblPhone.TextColor = Colors.Blue
+			lblPhone.Tag = item.Get("numer_telefonu") ' Przechowujemy numer w Tag etykiety
+			card.AddView(lblPhone, 10dip, 70dip, 80%x, 20dip)
+
+			' Zaokrąglenie rogów i cień dla wizytówki
+			Dim cd As ColorDrawable
+			cd.Initialize(Colors.White, 10dip)
+			card.Background = cd
+			card.Elevation = 5dip ' Efekt cienia
+		Next
+	Catch
+		ToastMessageShow("Błąd podczas przetwarzania JSON!", False)
+	End Try
+End Sub
+
+Sub CallNumber(View As Panel)
+	Dim phoneNumber As String = View.Tag ' Pobranie numeru telefonu z Tag
+	If phoneNumber <> "" Then
+		Dim intent As Intent
+		intent.Initialize(intent.ACTION_VIEW, "tel:" & phoneNumber)
+		StartActivity(intent) ' Uruchomienie dialera z numerem
+	Else
+		ToastMessageShow("Brak numeru telefonu", False)
+	End If
+End Sub
+
+Sub phoneLabel_Click
+	Dim clickedLabel As Label = Sender ' Pobieramy klikniętą etykietę
+	Dim phoneNumber As String = clickedLabel.Tag ' Pobieramy numer z Tag etykiety
+	If phoneNumber <> "" Then
+		Dim intent As Intent
+		intent.Initialize(intent.ACTION_CALL, "tel:" & phoneNumber) ' Poprawna składnia: ActionDial
+		StartActivity(intent) ' Uruchamiamy dialer
+	Else
+		ToastMessageShow("Brak numeru telefonu", False)
+	End If
+End Sub
