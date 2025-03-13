@@ -1,1 +1,13 @@
-sdfsf
+1. Uzupełnienie bazy danych
+fizyka amu edu książka adresowa - dev wersja - backend
+
+2. Serwer - cloudflare, pan udostępni serwer, potem domena np. na eu.org darmowe adresy ip, potem rejestrujemy tę domenę na cloudflare, i podać
+serwer, dwa dostajemy od cloudflare rita i jaxton 
+
+
+Podsumowanie
+strona int domena > domena przekierowuje na serwer > komputer musi mieć caddy która wykrywa zapytanie i przekierowuje na aplikacje > dalej za szybko, nie zdazylam notowac
+
+
+Zacząć od repozytorium.
+1. github > androidclass_dempapp > zrobić fork > fork to my account > będziemy mieli kopie oprogramowania pana > 
